@@ -21,15 +21,14 @@ class DiffJPEG(nn.Module):
             rounding = diff_round
         else:
             rounding = torch.round
+
+        assert 0 < quality < 100, f'Error, quality must be in range(0, 100), but got {quality}'
         factor = quality_to_factor(quality)
         self.compress = compress_jpeg(rounding=rounding, factor=factor)
         self.decompress = decompress_jpeg(height, width, rounding=rounding,
                                           factor=factor)
 
     def forward(self, x):
-        '''
-
-        '''
         y, cb, cr = self.compress(x)
         recovered = self.decompress(y, cb, cr)
         return recovered

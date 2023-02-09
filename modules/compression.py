@@ -20,9 +20,9 @@ class rgb_to_ycbcr_jpeg(nn.Module):
         matrix = np.array(
             [[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5],
              [0.5, -0.418688, -0.081312]], dtype=np.float32).T
-        self.shift = nn.Parameter(torch.tensor([0., 128., 128.]))
+        self.shift = nn.Parameter(torch.tensor([0., 128., 128.]), requires_grad=False)
         #
-        self.matrix = nn.Parameter(torch.from_numpy(matrix))
+        self.matrix = nn.Parameter(torch.from_numpy(matrix), requires_grad=False)
 
     def forward(self, image):
         image = image.permute(0, 2, 3, 1)
@@ -90,8 +90,8 @@ class dct_8x8(nn.Module):
                 (2 * y + 1) * v * np.pi / 16)
         alpha = np.array([1. / np.sqrt(2)] + [1] * 7)
         #
-        self.tensor =  nn.Parameter(torch.from_numpy(tensor).float())
-        self.scale = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha) * 0.25).float() )
+        self.tensor = nn.Parameter(torch.from_numpy(tensor).float(), requires_grad=False)
+        self.scale = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha) * 0.25).float(), requires_grad=False)
         
     def forward(self, image):
         image = image - 128

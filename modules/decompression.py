@@ -54,12 +54,12 @@ class idct_8x8(nn.Module):
     def __init__(self):
         super(idct_8x8, self).__init__()
         alpha = np.array([1. / np.sqrt(2)] + [1] * 7)
-        self.alpha = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha)).float())
+        self.alpha = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha)).float(), requires_grad=False)
         tensor = np.zeros((8, 8, 8, 8), dtype=np.float32)
         for x, y, u, v in itertools.product(range(8), repeat=4):
             tensor[x, y, u, v] = np.cos((2 * u + 1) * x * np.pi / 16) * np.cos(
                 (2 * v + 1) * y * np.pi / 16)
-        self.tensor = nn.Parameter(torch.from_numpy(tensor).float())
+        self.tensor = nn.Parameter(torch.from_numpy(tensor).float(), requires_grad=False)
 
     def forward(self, image):
         
@@ -128,8 +128,8 @@ class ycbcr_to_rgb_jpeg(nn.Module):
         matrix = np.array(
             [[1., 0., 1.402], [1, -0.344136, -0.714136], [1, 1.772, 0]],
             dtype=np.float32).T
-        self.shift = nn.Parameter(torch.tensor([0, -128., -128.]))
-        self.matrix = nn.Parameter(torch.from_numpy(matrix))
+        self.shift = nn.Parameter(torch.tensor([0, -128., -128.]), requires_grad=False)
+        self.matrix = nn.Parameter(torch.from_numpy(matrix), requires_grad=False)
 
     def forward(self, image):
         result = torch.tensordot(image + self.shift, self.matrix, dims=1)
