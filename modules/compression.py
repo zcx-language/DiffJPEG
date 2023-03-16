@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 # Local
-import utils
+from modules import utils
 
 
 class rgb_to_ycbcr_jpeg(nn.Module):
