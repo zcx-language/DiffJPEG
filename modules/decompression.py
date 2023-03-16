@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 # Local
-from modules import utils
+from .utils import c_table, y_table
 
 
 class y_dequantize(nn.Module):
@@ -19,7 +19,7 @@ class y_dequantize(nn.Module):
     """
     def __init__(self, factor=1):
         super(y_dequantize, self).__init__()
-        self.y_table = utils.y_table
+        self.y_table = y_table
         self.factor = factor
 
     def forward(self, image):
@@ -38,7 +38,7 @@ class c_dequantize(nn.Module):
     def __init__(self, factor=1):
         super(c_dequantize, self).__init__()
         self.factor = factor
-        self.c_table = utils.c_table
+        self.c_table = c_table
 
     def forward(self, image):
         return image * (self.c_table * self.factor)

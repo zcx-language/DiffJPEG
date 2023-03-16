@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 # Local
-from modules import utils
+from .utils import c_table, y_table
 
 
 class rgb_to_ycbcr_jpeg(nn.Module):
@@ -113,7 +113,7 @@ class y_quantize(nn.Module):
         super(y_quantize, self).__init__()
         self.rounding = rounding
         self.factor = factor
-        self.y_table = utils.y_table
+        self.y_table = y_table
 
     def forward(self, image):
         image = image.float() / (self.y_table * self.factor)
@@ -134,7 +134,7 @@ class c_quantize(nn.Module):
         super(c_quantize, self).__init__()
         self.rounding = rounding
         self.factor = factor
-        self.c_table = utils.c_table
+        self.c_table = c_table
 
     def forward(self, image):
         image = image.float() / (self.c_table * self.factor)
