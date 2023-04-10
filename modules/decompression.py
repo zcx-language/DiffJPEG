@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 # Local
-from .utils import c_table, y_table
 
 
 class y_dequantize(nn.Module):
@@ -19,7 +18,15 @@ class y_dequantize(nn.Module):
     """
     def __init__(self, factor=1):
         super(y_dequantize, self).__init__()
-        self.y_table = y_table
+        y_table = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                            [12, 12, 14, 19, 26, 58, 60, 55],
+                            [14, 13, 16, 24, 40, 57, 69, 56],
+                            [14, 17, 22, 29, 51, 87, 80, 62],
+                            [18, 22, 37, 56, 68, 109, 103, 77],
+                            [24, 35, 55, 64, 81, 104, 113, 92],
+                            [49, 64, 78, 87, 103, 121, 120, 101],
+                            [72, 92, 95, 98, 112, 100, 103, 99]], dtype=np.float32).T
+        self.register_buffer('y_table', torch.from_numpy(y_table), persistent=False)
         self.factor = factor
 
     def forward(self, image):
@@ -38,7 +45,13 @@ class c_dequantize(nn.Module):
     def __init__(self, factor=1):
         super(c_dequantize, self).__init__()
         self.factor = factor
-        self.c_table = c_table
+
+        c_table = np.empty((8, 8), dtype=np.float32)
+        c_table.fill(99)
+        c_table[:4, :4] = np.array([[17, 18, 24, 47], [18, 21, 26, 66],
+                                    [24, 26, 56, 99], [47, 66, 99, 99]]).T
+        # self.c_table = c_table
+        self.register_buffer('c_table', torch.from_numpy(c_table), persistent=False)
 
     def forward(self, image):
         return image * (self.c_table * self.factor)
@@ -53,13 +66,16 @@ class idct_8x8(nn.Module):
     """
     def __init__(self):
         super(idct_8x8, self).__init__()
-        alpha = np.array([1. / np.sqrt(2)] + [1] * 7)
-        self.alpha = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha)).float(), requires_grad=False)
+        alpha = np.array([1. / np.sqrt(2)] + [1] * 7, dtype=np.float32)
+        # self.alpha = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha)).float(), requires_grad=False)
+        self.register_buffer('alpha', torch.from_numpy(np.outer(alpha, alpha)), persistent=False)
+
         tensor = np.zeros((8, 8, 8, 8), dtype=np.float32)
         for x, y, u, v in itertools.product(range(8), repeat=4):
             tensor[x, y, u, v] = np.cos((2 * u + 1) * x * np.pi / 16) * np.cos(
                 (2 * v + 1) * y * np.pi / 16)
-        self.tensor = nn.Parameter(torch.from_numpy(tensor).float(), requires_grad=False)
+        # self.tensor = nn.Parameter(torch.from_numpy(tensor).float(), requires_grad=False)
+        self.register_buffer('tensor', torch.from_numpy(tensor), persistent=False)
 
     def forward(self, image):
         
@@ -125,11 +141,14 @@ class ycbcr_to_rgb_jpeg(nn.Module):
     def __init__(self):
         super(ycbcr_to_rgb_jpeg, self).__init__()
 
+        # self.shift = nn.Parameter(torch.tensor([0, -128., -128.]), requires_grad=False)
+        self.register_buffer('shift', torch.tensor([0., -128, -128]), persistent=False)
+
         matrix = np.array(
             [[1., 0., 1.402], [1, -0.344136, -0.714136], [1, 1.772, 0]],
             dtype=np.float32).T
-        self.shift = nn.Parameter(torch.tensor([0, -128., -128.]), requires_grad=False)
-        self.matrix = nn.Parameter(torch.from_numpy(matrix), requires_grad=False)
+        # self.matrix = nn.Parameter(torch.from_numpy(matrix), requires_grad=False)
+        self.register_buffer('matrix', torch.from_numpy(matrix), persistent=False)
 
     def forward(self, image):
         result = torch.tensordot(image + self.shift, self.matrix, dims=1)

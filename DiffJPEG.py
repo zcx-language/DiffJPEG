@@ -68,7 +68,17 @@ def quality_to_factor(quality):
 
 
 def run():
-    jpeg = DiffJPEG(128, 128, differentiable=False)
+    import numpy as np
+    from PIL import Image
+    import torchvision.transforms.functional as tvf
+    jpeg = DiffJPEG(128, 128, differentiable=False, quality=40)
+    img_path = '/home/chengxin/Desktop/lena.png'
+    img = Image.open(img_path).convert('RGB').resize((128, 128))
+    img.show()
+
+    comp_img_tsr = jpeg(tvf.to_tensor(img).unsqueeze(dim=0)).squeeze()
+    comp_img = tvf.to_pil_image(comp_img_tsr)
+    comp_img.show()
     pass
 
 

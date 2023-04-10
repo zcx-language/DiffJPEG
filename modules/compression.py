@@ -4,8 +4,6 @@ import numpy as np
 # PyTorch
 import torch
 import torch.nn as nn
-# Local
-from .utils import c_table, y_table
 
 
 class rgb_to_ycbcr_jpeg(nn.Module):
@@ -17,12 +15,12 @@ class rgb_to_ycbcr_jpeg(nn.Module):
     """
     def __init__(self):
         super(rgb_to_ycbcr_jpeg, self).__init__()
-        matrix = np.array(
-            [[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5],
-             [0.5, -0.418688, -0.081312]], dtype=np.float32).T
-        self.shift = nn.Parameter(torch.tensor([0., 128., 128.]), requires_grad=False)
-        #
-        self.matrix = nn.Parameter(torch.from_numpy(matrix), requires_grad=False)
+        matrix = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5],
+                           [0.5, -0.418688, -0.081312]], dtype=np.float32).T
+        self.register_buffer('shift', torch.tensor([0., 128., 128.]), persistent=False)
+        # self.shift = nn.Parameter(torch.tensor([0., 128., 128.]), requires_grad=False)
+        self.register_buffer('matrix', torch.from_numpy(matrix), persistent=False)
+        # self.matrix = nn.Parameter(torch.from_numpy(matrix), requires_grad=False)
 
     def forward(self, image):
         image = image.permute(0, 2, 3, 1)
@@ -30,7 +28,6 @@ class rgb_to_ycbcr_jpeg(nn.Module):
     #    result = torch.from_numpy(result)
         result.view(image.shape)
         return result
-
 
 
 class chroma_subsampling(nn.Module):
@@ -89,9 +86,10 @@ class dct_8x8(nn.Module):
             tensor[x, y, u, v] = np.cos((2 * x + 1) * u * np.pi / 16) * np.cos(
                 (2 * y + 1) * v * np.pi / 16)
         alpha = np.array([1. / np.sqrt(2)] + [1] * 7)
-        #
-        self.tensor = nn.Parameter(torch.from_numpy(tensor).float(), requires_grad=False)
-        self.scale = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha) * 0.25).float(), requires_grad=False)
+        self.register_buffer('tensor', torch.from_numpy(tensor), persistent=False)
+        # self.tensor = nn.Parameter(torch.from_numpy(tensor).float(), requires_grad=False)
+        self.register_buffer('scale', torch.from_numpy(np.outer(alpha, alpha)*0.25), persistent=False)
+        # self.scale = nn.Parameter(torch.from_numpy(np.outer(alpha, alpha) * 0.25).float(), requires_grad=False)
         
     def forward(self, image):
         image = image - 128
@@ -113,7 +111,16 @@ class y_quantize(nn.Module):
         super(y_quantize, self).__init__()
         self.rounding = rounding
         self.factor = factor
-        self.y_table = y_table
+        # self.y_table = y_table
+        y_table = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                            [12, 12, 14, 19, 26, 58, 60, 55],
+                            [14, 13, 16, 24, 40, 57, 69, 56],
+                            [14, 17, 22, 29, 51, 87, 80, 62],
+                            [18, 22, 37, 56, 68, 109, 103, 77],
+                            [24, 35, 55, 64, 81, 104, 113, 92],
+                            [49, 64, 78, 87, 103, 121, 120, 101],
+                            [72, 92, 95, 98, 112, 100, 103, 99]], dtype=np.float32).T
+        self.register_buffer('y_table', torch.from_numpy(y_table), persistent=False)
 
     def forward(self, image):
         image = image.float() / (self.y_table * self.factor)
@@ -134,7 +141,13 @@ class c_quantize(nn.Module):
         super(c_quantize, self).__init__()
         self.rounding = rounding
         self.factor = factor
-        self.c_table = c_table
+
+        c_table = np.empty((8, 8), dtype=np.float32)
+        c_table.fill(99)
+        c_table[:4, :4] = np.array([[17, 18, 24, 47], [18, 21, 26, 66],
+                                    [24, 26, 56, 99], [47, 66, 99, 99]]).T
+        # self.c_table = c_table
+        self.register_buffer('c_table', torch.from_numpy(c_table), persistent=False)
 
     def forward(self, image):
         image = image.float() / (self.c_table * self.factor)

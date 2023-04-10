@@ -5,8 +5,11 @@ This is a pytorch implementation of differentiable jpeg compression algorithm.  
 ## Notice
 This is the forked [repository](https://github.com/mlomnitz/DiffJPEG) with such modify:
 1. Bug: gets NaN when the quality set to be 100. We add an assert expression in the initialization to ensure a proper quality value.
-2. Set all the nn.parameter()'s `requires_grad` flag to False in DiffJPEG, otherwise the JPEG quantization table could be changed after optimization.
+
+~~2. Set all the nn.parameter()'s `requires_grad` flag to False in DiffJPEG, otherwise the JPEG quantization table could be changed after optimization.~~
+
 3. Add a `p` parameter to control the possibility of compression.
+4. Convert the DCT parameters form from `nn.Parameters()` to `self.register_buffer(persistent=False)`. It avoids saving the DCT parameters again and again.
 
 ## Requirements
 - Pytorch 1.0.0
